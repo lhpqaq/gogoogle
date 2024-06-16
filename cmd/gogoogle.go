@@ -11,8 +11,7 @@ func main() {
 	args := os.Args
 	f := geturl.ParseArgs(args)
 	fmt.Println("hello google")
-	var g crawler.Crawler
-	g = crawler.Google{}
+	g := crawler.Google{}
 	web, content, err := geturl.GetWeb(f)
 	if f.Debug {
 		fmt.Println("Web:", web)
@@ -23,5 +22,8 @@ func main() {
 	}
 	url := geturl.GetURL(web, geturl.ArrayToString(content, web.Delim))
 	fmt.Println("URL:", url)
-	g.GetRaw(url)
+	g.Init(url)
+	go g.Print()
+	g.GetResult()
+	// crawler.Run(&g, url)
 }

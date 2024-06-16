@@ -1,31 +1,17 @@
 package crawler
 
-import "fmt"
-
 type Crawler interface {
-	GetRaw(string)
-	Test()
-}
-
-type Result struct {
-
-	// Rank is the order number of the search result.
-	Rank int `json:"rank"`
-
-	// URL of result.
-	URL string `json:"url"`
-
-	// Title of result.
-	Title string `json:"title"`
-
-	// Description of the result.
-	Description string `json:"description"`
+	Init(string)
+	GetResult()
+	Print()
 }
 
 func Test(c Crawler, url string) {
-	c.GetRaw(url)
+	c.GetResult()
 }
 
-func (c Google) Test() {
-	fmt.Println()
+func Run(c Crawler, url string) {
+	c.Init(url)
+	go c.Print()
+	c.GetResult()
 }
