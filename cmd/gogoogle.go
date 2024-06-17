@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	r "gogoogle/internal/result"
+
 	"gogoogle/internal/crawler"
 	"gogoogle/internal/geturl"
 	"os"
@@ -22,8 +24,10 @@ func main() {
 	}
 	url := geturl.GetURL(web, geturl.ArrayToString(content, web.Delim))
 	fmt.Println("URL:", url)
+	res := r.Results{}
+	res.Init()
 	g.Init(url)
-	go g.Print()
-	g.GetResult()
+	go g.GetResult(&res)
+	res.Print()
 	// crawler.Run(&g, url)
 }

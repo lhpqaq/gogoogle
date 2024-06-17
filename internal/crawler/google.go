@@ -3,6 +3,7 @@ package crawler
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"strings"
 
 	r "gogoogle/internal/result"
@@ -17,20 +18,20 @@ type Google struct {
 	url     string
 	results chan r.Result
 	start   int
+	topen   chan string
 }
 
 func (g *Google) Init(url string) {
 	// fmt.Println(g.url)
-	g.results = make(chan r.Result)
+	g.results = make(chan r.Result, 10)
 	g.start = 0
 	g.url = url
 	// fmt.Println(g.url)
 }
 
-func (g *Google) GetResult() {
+func (g *Google) ParseHTML() {
 	var rErr error
 	ctx := context.Background()
-
 	c := colly.NewCollector(colly.MaxDepth(1))
 	c.UserAgent = defaultAgent
 	_ = c.SetProxy("socks://127.0.0.1:7890")
@@ -54,7 +55,7 @@ func (g *Google) GetResult() {
 	})
 
 	rank := 1
-	filteredRank := 1
+	filteredRank := g.start + 1
 	results := []r.Result{}
 	c.OnHTML("div.g", func(e *colly.HTMLElement) {
 		// c.OnHTML("div[class='N54PNb BToiNc cvP2Ce']", func(e *colly.HTMLElement) {
@@ -81,11 +82,6 @@ func (g *Google) GetResult() {
 			filteredRank += 1
 		}
 		// fmt.Println("-----------------------------------------")
-		// check if there is a next button at the end.
-		// Added this selector as the Id is the same for every language checked on google.com .pt and .es the text changes but the id remains the same
-		// nextPageHref, _ := sel.Find("a #pnnext").Attr("href")
-		// nextPageLink = strings.TrimSpace(nextPageHref)
-		// fmt.Println("here:", nextPageLink)
 	})
 	g.url += "&num=10"
 	g.url += fmt.Sprintf("&start=%d", g.start)
@@ -93,12 +89,35 @@ func (g *Google) GetResult() {
 	q.AddURL(g.url)
 	q.Run(c)
 	fmt.Println(rErr)
-	// fmt.Println(results)
-	// c.OnResponse(func(r *colly.Response) {
-	// 	fmt.Printf("Response %s: %d bytes\n", r.Request.URL, len(r.Body))
-	// 	fmt.Println()
-	// })
-	// c.Visit(url)
+	result := r.Result{
+		Rank: -1,
+	}
+	g.results <- result
+}
+
+func (g *Google) GetResult(re *r.Results) {
+	go g.ParseHTML()
+	num := 0
+	for {
+		res := <-g.results
+		num += 1
+		if res.Rank < 0 {
+			g.start += num
+			re.Parsing <- num
+			// fmt.Println(re.Res)
+			num = 0
+			cmd := <-re.Cmd
+			switch cmd {
+			case 1:
+				{
+					fmt.Println("cmd 1")
+					go g.ParseHTML()
+				}
+			}
+		} else {
+			re.Res[res.Rank] = res
+		}
+	}
 }
 
 func (g *Google) Print() {
@@ -107,8 +126,17 @@ func (g *Google) Print() {
 		res := <-g.results
 		num += 1
 		fmt.Println(res.Title)
-		if num == 10 {
-			break
+		if res.Rank < 0 {
+			g.start += num
+			num = 0
+			go g.ParseHTML()
 		}
+	}
+}
+
+func (g *Google) OpenUrl() {
+	for {
+		openurl := <-g.topen
+		exec.Command("open", openurl).Start()
 	}
 }

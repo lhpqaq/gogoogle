@@ -19,6 +19,8 @@ type Result struct {
 }
 
 type Results struct {
-	Chan chan Result
-	Num  int
+	Res     map[int]Result
+	Parsing chan int
+	Cmd     chan int
+	Num     int
 }
