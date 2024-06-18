@@ -23,6 +23,7 @@ type Result struct {
 
 type Results struct {
 	Res     map[int]Result
+	Url     string
 	Parsing chan int
 	Cmd     chan int
 	Num     int

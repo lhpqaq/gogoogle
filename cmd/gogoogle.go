@@ -11,8 +11,12 @@ import (
 
 func main() {
 	args := os.Args
+	if len(args) < 2 {
+		fmt.Println("Usage: gg [keyword...]")
+		return
+	}
 	f := geturl.ParseArgs(args)
-	fmt.Println("hello google")
+	// fmt.Println("hello google")
 	g := crawler.Google{}
 	web, content, err := geturl.GetWeb(f)
 	if f.Debug {
@@ -23,7 +27,7 @@ func main() {
 		return
 	}
 	url := geturl.GetURL(web, geturl.ArrayToString(content, web.Delim))
-	fmt.Println("URL:", url)
+	// fmt.Println("URL:", url)
 	res := r.Results{}
 	res.Init()
 	g.Init(url)

@@ -2,9 +2,13 @@ package result
 
 import (
 	"fmt"
+	s "gogoogle/internal/show"
+	"os"
 	"os/exec"
 	"strconv"
 )
+
+var gShow = s.Show{}
 
 func (r *Results) Init() {
 	r.Res = make(map[int]Result)
@@ -33,6 +37,15 @@ func (r *Results) Command() {
 				r.Cmd <- 1
 				return
 			}
+		case "q", "quit":
+			{
+				os.Exit(0)
+			}
+		case "o", "open":
+			{
+				exec.Command("open", r.Url).Start()
+				break
+			}
 		default:
 			{
 				rank, err := strconv.Atoi(cmd)
@@ -53,9 +66,18 @@ func (r *Results) Show(start int, num int) {
 	for i := range num {
 		re, ok := r.Res[start+i]
 		if ok {
-			fmt.Printf("%2d. %s\n", start+i, re.Title)
-			fmt.Printf("    %s%s\n", re.WebTime, re.WebDomain)
-			fmt.Printf("    %s\n", re.Description)
+			re.show()
 		}
 	}
+}
+
+func (r *Result) show() {
+	if gShow.Time == nil {
+		gShow.Init()
+	}
+	gShow.Title.Printf("%d. %s", r.Rank, r.Title)
+	gShow.Domain.Printf("   %s\n", r.WebDomain)
+	gShow.Time.Printf("   %s ", r.WebTime)
+	gShow.Desc.Printf("%s\n", r.Description)
+	fmt.Println()
 }

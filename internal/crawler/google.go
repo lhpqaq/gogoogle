@@ -34,18 +34,11 @@ func (g *Google) ParseHTML() {
 	c.UserAgent = defaultAgent
 	_ = c.SetProxy("socks://127.0.0.1:7890")
 	q, _ := queue.New(1, &queue.InMemoryQueueStorage{MaxSize: 10000})
-	nextPageLink := ""
 	c.OnRequest(func(r *colly.Request) {
 		if err := ctx.Err(); err != nil {
 			r.Abort()
 			rErr = err
 			return
-		}
-		if nextPageLink != "" {
-			req, err := r.New("GET", nextPageLink, nil)
-			if err == nil {
-				q.AddRequest(req)
-			}
 		}
 	})
 	c.OnError(func(r *colly.Response, err error) {
@@ -61,7 +54,7 @@ func (g *Google) ParseHTML() {
 		linkText := strings.TrimSpace(linkHref)
 		titleText := strings.TrimSpace(sel.Find("div > div > div > span > a > h3").Text())
 		descText := strings.TrimSpace(sel.Find("div > div > div:nth-child(2) > div > span:nth-child(2)").Text())
-		domainText := strings.TrimSpace(sel.Find(".VuuXrf").Text())
+		domainText := strings.TrimSpace(sel.Find("div > div > span > a > div > div > div > div:nth-child(1) > span").Text())
 		timeText := strings.TrimSpace(sel.Find(".LEwnzc.Sqrs4e").Text())
 		rank += 1
 		if linkText != "" && linkText != "#" && titleText != "" {
@@ -93,6 +86,7 @@ func (g *Google) ParseHTML() {
 }
 
 func (g *Google) GetResult(re *r.Results) {
+	re.Url = g.url
 	go g.ParseHTML()
 	num := 0
 	for {
