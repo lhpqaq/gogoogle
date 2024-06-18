@@ -16,6 +16,9 @@ type Result struct {
 
 	// Time
 	WebTime string `json:"webtime"`
+
+	// Domain
+	WebDomain string `json:"webdomain"`
 }
 
 type Results struct {

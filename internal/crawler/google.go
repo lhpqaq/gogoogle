@@ -22,11 +22,9 @@ type Google struct {
 }
 
 func (g *Google) Init(url string) {
-	// fmt.Println(g.url)
 	g.results = make(chan r.Result, 10)
 	g.start = 0
 	g.url = url
-	// fmt.Println(g.url)
 }
 
 func (g *Google) ParseHTML() {
@@ -58,17 +56,13 @@ func (g *Google) ParseHTML() {
 	filteredRank := g.start + 1
 	results := []r.Result{}
 	c.OnHTML("div.g", func(e *colly.HTMLElement) {
-		// c.OnHTML("div[class='N54PNb BToiNc cvP2Ce']", func(e *colly.HTMLElement) {
 		sel := e.DOM
 		linkHref, _ := sel.Find("a").Attr("href")
-		// fmt.Println(linkHref)
 		linkText := strings.TrimSpace(linkHref)
-		// fmt.Println(linkText)
-		// fmt.Println(sel.Html())
-		// fmt.Println(sel.Find("div > div > div > span > a > h3").Text())
 		titleText := strings.TrimSpace(sel.Find("div > div > div > span > a > h3").Text())
-		descText := strings.TrimSpace(sel.Find("div > div > div > div:first-child > span:first-child").Text())
-		// fmt.Println(sel.Find("div > div > div > div:first-child > span:first-child").Text())
+		descText := strings.TrimSpace(sel.Find("div > div > div:nth-child(2) > div > span:nth-child(2)").Text())
+		domainText := strings.TrimSpace(sel.Find(".VuuXrf").Text())
+		timeText := strings.TrimSpace(sel.Find(".LEwnzc.Sqrs4e").Text())
 		rank += 1
 		if linkText != "" && linkText != "#" && titleText != "" {
 			result := r.Result{
@@ -76,19 +70,22 @@ func (g *Google) ParseHTML() {
 				URL:         linkText,
 				Title:       titleText,
 				Description: descText,
+				WebTime:     timeText,
+				WebDomain:   domainText,
 			}
 			results = append(results, result)
 			g.results <- result
 			filteredRank += 1
 		}
-		// fmt.Println("-----------------------------------------")
 	})
 	g.url += "&num=10"
+	// g.url += "&num=10&lr=lang_zh-CN"
 	g.url += fmt.Sprintf("&start=%d", g.start)
-	// fmt.Println(g.url)
 	q.AddURL(g.url)
 	q.Run(c)
-	fmt.Println(rErr)
+	if rErr != nil {
+		fmt.Println(rErr)
+	}
 	result := r.Result{
 		Rank: -1,
 	}
@@ -100,22 +97,20 @@ func (g *Google) GetResult(re *r.Results) {
 	num := 0
 	for {
 		res := <-g.results
-		num += 1
 		if res.Rank < 0 {
 			g.start += num
 			re.Parsing <- num
-			// fmt.Println(re.Res)
 			num = 0
 			cmd := <-re.Cmd
 			switch cmd {
 			case 1:
 				{
-					fmt.Println("cmd 1")
 					go g.ParseHTML()
 				}
 			}
 		} else {
 			re.Res[res.Rank] = res
+			num += 1
 		}
 	}
 }
